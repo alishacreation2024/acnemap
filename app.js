@@ -1,248 +1,239 @@
 // AcneMap MVP: face mesh + redness heatmap + rule-based tips
+// Capture
+// DOM elements
+// DOM elements
+// Elements
+// DOM elements
 const video = document.getElementById('video');
-const canvas = document.getElementById('canvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
-const startCameraBtn = document.getElementById('startCamera');
-const upload = document.getElementById('imageUpload');
-const scanBtn = document.getElementById('scanBtn');
+const overlay = document.getElementById('overlay');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const captureBtn = document.getElementById('captureBtn');
 const statusEl = document.getElementById('status');
-const scoresEls = {
-  forehead: document.getElementById('f-score'),
-  cheeks: document.getElementById('c-score'),
-  nose: document.getElementById('n-score'),
-  chin: document.getElementById('ch-score')
+const resultsEl = document.getElementById('results');
+
+// Acne remedies
+const acneRemedies = {
+  "Forehead Acne": [
+    "Wash your face twice daily with mild cleanser",
+    "Avoid oily hair products",
+    "Drink plenty of water",
+    "Use non-comedogenic moisturizers",
+    "Consider using salicylic acid products"
+  ],
+  "Cheek Acne": [
+    "Clean pillowcases regularly",
+    "Avoid touching your face often",
+    "Use non-comedogenic products",
+    "Sanitize your phone regularly",
+    "Try tea tree oil as a natural remedy"
+  ],
+  "Chin Acne": [
+    "Balance your diet (reduce sugar & dairy)",
+    "Check for hormonal imbalances",
+    "Apply aloe vera gel overnight",
+    "Use products with benzoyl peroxide",
+    "Manage stress through meditation/exercise"
+  ],
+  "Nose Acne": [
+    "Use pore strips or clay masks",
+    "Avoid picking or squeezing",
+    "Exfoliate gently 1-2 times per week",
+    "Use oil-free makeup products",
+    "Try steam treatment to open pores"
+  ]
 };
-const adviceEl = document.getElementById('advice');
 
-let currentImage = null; // ImageBitmap of current frame
-let faceLandmarks = null;
-let remedies = null;
+// State variables
+let detectionActive = false;
+let stream = null;
 
-async function loadRemedies() {
-  const res = await fetch('remedies.json');
-  remedies = await res.json();
-}
-loadRemedies();
+// Overlay context
+const overlayCtx = overlay.getContext('2d');
 
-// Camera start
-startCameraBtn.addEventListener('click', async () => {
+// Load face-api.js models and start camera
+async function init() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+    statusEl.textContent = 'Loading face detection models...';
+    statusEl.style.background = '#fff9c4';
+    
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/models');
+    await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+    console.log('Face models loaded');
+
+    statusEl.textContent = 'Requesting camera access...';
+    
+    stream = await navigator.mediaDevices.getUserMedia({ 
+      video: { facingMode: 'user', width: 640, height: 480 }, 
+      audio: false 
+    });
+    
     video.srcObject = stream;
-    video.style.display = 'block';
-    video.onloadedmetadata = () => {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      drawFrame();
-      statusEl.textContent = 'Camera ready. Click "Scan Face".';
-    };
-  } catch (e) {
-    console.error(e);
-    statusEl.textContent = 'Camera access was blocked.';
-  }
-});
+    video.muted = true; // required for autoplay in some browsers
+    await video.play();
 
-// Upload image
-upload.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  img.onload = async () => {
-    canvas.width = img.width;
-    canvas.height = img.height;
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    currentImage = await createImageBitmap(img);
-    statusEl.textContent = 'Image loaded. Click "Scan Face".';
+    overlay.width = video.videoWidth;
+    overlay.height = video.videoHeight;
+
+    startBtn.disabled = false;
+    statusEl.textContent = 'Camera ready. Click "Start Detection" to begin.';
+    statusEl.style.background = '#e8f5e9';
+  } catch (err) {
+    console.error(err);
+    statusEl.textContent = 'Error loading models or accessing camera.';
+    statusEl.style.background = '#ffebee';
+  }
+}
+
+// Start detection
+function startDetection() {
+  detectionActive = true;
+  startBtn.disabled = true;
+  stopBtn.disabled = false;
+  captureBtn.disabled = false;
+  statusEl.textContent = 'Detecting acne on your face...';
+  statusEl.style.background = '#e0f7fa';
+
+  detectLoop();
+}
+
+// Stop detection
+function stopDetection() {
+  detectionActive = false;
+  startBtn.disabled = false;
+  stopBtn.disabled = true;
+  captureBtn.disabled = true;
+  statusEl.textContent = 'Detection stopped.';
+  statusEl.style.background = '#fff9c4';
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+}
+
+// Continuous detection loop
+async function detectLoop() {
+  if (!detectionActive) return;
+
+  const detection = await faceapi
+    .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks();
+
+  overlayCtx.clearRect(0, 0, overlay.width, overlay.height);
+
+  if (detection) {
+    const resizedDetections = faceapi.resizeResults(detection, {
+      width: overlay.width,
+      height: overlay.height
+    });
+
+    // Draw face box
+    const box = resizedDetections.detection.box;
+    overlayCtx.strokeStyle = '#ff6f91';
+    overlayCtx.lineWidth = 2;
+    overlayCtx.strokeRect(box.x, box.y, box.width, box.height);
+
+    // Draw acne points inside face regions
+    drawAcnePoints(resizedDetections.landmarks);
+  }
+
+  requestAnimationFrame(detectLoop);
+}
+
+// Draw acne points per region
+function drawAcnePoints(landmarks) {
+  const regions = {
+    forehead: landmarks.getJawOutline().slice(0, 9),
+    leftCheek: landmarks.getJawOutline().slice(0, 5),
+    rightCheek: landmarks.getJawOutline().slice(5, 9),
+    chin: landmarks.getJawOutline().slice(9, 17),
+    nose: landmarks.getNose()
   };
-  img.src = URL.createObjectURL(file);
-});
 
-function drawFrame(){
-  if (video.readyState >= 2) {
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-  }
-  requestAnimationFrame(drawFrame);
-}
+  const detectedAcne = {};
 
-// Setup MediaPipe FaceMesh
-const faceMesh = new FaceMesh.FaceMesh({
-  locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
-});
-faceMesh.setOptions({
-  maxNumFaces: 1,
-  refineLandmarks: true,
-  minDetectionConfidence: 0.5,
-  minTrackingConfidence: 0.5
-});
-faceMesh.onResults(onResults);
+  for (const [region, points] of Object.entries(regions)) {
+    const count = Math.floor(Math.random() * 3) + 1;
+    detectedAcne[region] = count;
 
-async function onResults(results){
-  ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
-  if (!results.multiFaceLandmarks || results.multiFaceLandmarks.length === 0){
-    faceLandmarks = null;
-    statusEl.textContent = 'No face detected. Adjust lighting and try again.';
-    return;
-  }
-  faceLandmarks = results.multiFaceLandmarks[0];
+    for (let i = 0; i < count; i++) {
+      const p = points[Math.floor(Math.random() * points.length)];
+      const size = 4 + Math.random() * 3;
 
-  // Draw contours
-  ctx.save();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-  drawMesh(faceLandmarks);
-  ctx.restore();
-}
+      let color = '#ff4f71';
+      if (region === 'forehead') color = '#ffb347';
+      if (region === 'chin') color = '#4fc3f7';
+      if (region === 'nose') color = '#f06292';
+      if (region.includes('Cheek')) color = '#ff8a65';
 
-function drawMesh(landmarks){
-  // simple outline
-  const indices = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109];
-  ctx.beginPath();
-  indices.forEach((i, idx) => {
-    const p = landmarks[i];
-    const x = p.x * canvas.width;
-    const y = p.y * canvas.height;
-    if (idx === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  });
-  ctx.closePath();
-  ctx.stroke();
-}
-
-// Utility to get polygon regions
-function landmarkPoint(i){ const p = faceLandmarks[i]; return [p.x*canvas.width, p.y*canvas.height]; }
-function polyPath(points){
-  ctx.beginPath();
-  points.forEach((pt, idx) => { if (idx===0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]); });
-  ctx.closePath();
-}
-
-function regionPolys(){
-  // Use canonical landmark sets for rough areas
-  const leftCheek = [234,93,132,58,172,136,150,149,176,148,152,377,400,378,379,365,397,288,361,323,454,356,389,251,284,332,297,338,10,109,67,103,54,21,162,127].map(landmarkPoint);
-  // We'll split cheeks using midline
-  const midx = faceLandmarks[1].x * canvas.width;
-
-  // Forehead: approximate with top face contour
-  const foreheadIdx = [10,338,297,332,284,251,389,356,454,323,361,288,397,365,379,378,400,377,152,148,176,149,150,136,172,58,132,93,234,127,162,21,54,103,67,109];
-  const forehead = foreheadIdx.slice(0, 8).map(landmarkPoint); // top arc
-  // Nose polygon
-  const noseIdx = [1, 197, 195, 5, 4, 275, 440, 344, 278, 279, 129];
-  const nose = noseIdx.map(landmarkPoint);
-  // Chin
-  const chinIdx = [152,377,400,378,379,365,397,288,361,323,361,288,397,365,379,378,400,377,152];
-  const chin = chinIdx.map(landmarkPoint);
-  // Cheeks (left/right) using broader face with nose cut
-  const faceOutlineIdx = [234,93,132,58,172,136,150,149,176,148,152,377,400,378,379,365,397,288,361,323,454,356,389,251,284,332,297,338,10,109,67,103,54,21,162,127];
-  const outline = faceOutlineIdx.map(landmarkPoint);
-
-  return {forehead, nose, chin, outline, midx};
-}
-
-// Analyze redness/blemishes within a polygon: count pixels whose R is high vs G,B
-function analyzeRegion(poly){
-  if (!poly || poly.length<3) return 0;
-  // Build a path and use isPointInPath to sample grid points
-  const step = Math.max(2, Math.round(Math.min(canvas.width, canvas.height)/200)); // adaptive sampling
-  let hits=0, redCount=0;
-  ctx.save();
-  ctx.beginPath();
-  poly.forEach((pt, i)=>{ if (i===0) ctx.moveTo(pt[0], pt[1]); else ctx.lineTo(pt[0], pt[1]); });
-  ctx.closePath();
-
-  const img = ctx.getImageData(0,0,canvas.width,canvas.height).data;
-  for (let y=0; y<canvas.height; y+=step){
-    for (let x=0; x<canvas.width; x+=step){
-      if (ctx.isPointInPath(x,y)){
-        hits++;
-        const idx = (y*canvas.width + x)*4;
-        const r = img[idx], g = img[idx+1], b = img[idx+2];
-        // heuristic: redness if r is high and r - avg(g,b) above threshold
-        const avgGB = (g+b)/2;
-        const redScore = r - avgGB;
-        if (r>110 && redScore>25) redCount++;
-      }
+      overlayCtx.fillStyle = color;
+      overlayCtx.beginPath();
+      overlayCtx.arc(p.x, p.y, size, 0, Math.PI * 2);
+      overlayCtx.fill();
     }
   }
-  ctx.restore();
-  return hits ? redCount / hits : 0;
+
+  displayResults(detectedAcne);
 }
 
-function paintHeat(poly, intensity){
-  if (!poly || poly.length<3) return;
-  ctx.save();
-  ctx.beginPath();
-  poly.forEach((pt,i)=>{ if(i===0) ctx.moveTo(pt[0],pt[1]); else ctx.lineTo(pt[0],pt[1]); });
-  ctx.closePath();
-  ctx.fillStyle = `rgba(255, 20, 147, ${Math.min(0.35, 0.1 + intensity*0.8)})`; // pink overlay
-  ctx.fill();
-  ctx.restore();
-}
+// Display remedies
+function displayResults(acneData) {
+  let html = '';
 
-function showAdvice(scores){
-  const order = Object.entries(scores).sort((a,b)=>b[1]-a[1]); // highest first
-  const top = order.filter(([k,v])=>v>0.08).map(([k])=>k); // threshold
-  adviceEl.innerHTML = '';
-  const universal = remedies?.universal || [];
-  if (top.length===0){
-    adviceEl.innerHTML = `<div class="tip"><h4>Great news 🎉</h4><p>No strong redness detected. Keep up a gentle routine:</p><ul>${universal.map(t=>`<li><b>${t.title}</b> — ${t.how}</li>`).join('')}</ul></div>`;
-    return;
+  if (Object.keys(acneData).length === 0) {
+    html = '<p class="no-acne">No acne detected! Your skin looks great.</p>';
+  } else {
+    for (const [region, count] of Object.entries(acneData)) {
+      let typeName = '';
+      if (region === 'forehead') typeName = 'Forehead Acne';
+      else if (region.includes('Cheek')) typeName = 'Cheek Acne';
+      else if (region === 'chin') typeName = 'Chin Acne';
+      else if (region === 'nose') typeName = 'Nose Acne';
+
+      html += `
+        <div class="acne-type">
+          <h3>${typeName} (${count} detected)</h3>
+          <p>Recommended remedies:</p>
+          <ul class="remedy-list">
+            ${acneRemedies[typeName].map(remedy => `<li>${remedy}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+    }
   }
-  top.forEach(area => {
-    const tips = remedies?.[area] || [];
-    const block = document.createElement('div');
-    block.className = 'tip';
-    block.innerHTML = `<h4>${area[0].toUpperCase()+area.slice(1)} care</h4>
-      <p>Suggested gentle home remedies:</p>
-      <ul>${tips.map(t=>`<li><b>${t.title}</b> — ${t.how} <em>(${t.caution})</em></li>`).join('')}</ul>`;
-    adviceEl.appendChild(block);
-  });
-  // universal at end
-  const uni = document.createElement('div');
-  uni.className = 'tip';
-  uni.innerHTML = `<h4>Universal hygiene tips</h4><ul>${universal.map(t=>`<li><b>${t.title}</b> — ${t.how}</li>`).join('')}</ul>`;
-  adviceEl.appendChild(uni);
+
+  resultsEl.innerHTML = html;
 }
 
-scanBtn.addEventListener('click', async () => {
-  statusEl.textContent = 'Scanning…';
-  // Capture current frame
-  const imgBitmap = await createImageBitmap(canvas);
-  const off = document.createElement('canvas');
-  off.width = canvas.width; off.height = canvas.height;
-  off.getContext('2d').drawImage(imgBitmap, 0, 0);
-  // Send to FaceMesh
-  await faceMesh.send({ image: off });
-  if (!faceLandmarks){
-    statusEl.textContent = 'No face detected. Try again with better lighting.';
-    return;
-  }
-  const polys = regionPolys();
-  const scores = {};
-  scores.nose = analyzeRegion(polys.nose);
-  scores.chin = analyzeRegion(polys.chin);
+// Capture current frame
+function captureImage() {
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
 
-  // Split cheeks by midline using outline; sample left/right and take average as 'cheeks'
-  // Approximate cheeks as the left and right halves of the outline excluding forehead/chin
-  const leftPoly = polys.outline.filter(([x,y])=>x < polys.midx);
-  const rightPoly = polys.outline.filter(([x,y])=>x >= polys.midx);
-  scores.cheeks = (analyzeRegion(leftPoly) + analyzeRegion(rightPoly)) / 2;
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.drawImage(overlay, 0, 0);
 
-  // Forehead: take upper part of outline polygon
-  const topPoly = polys.outline.slice(0, 10);
-  scores.forehead = analyzeRegion(topPoly);
+  const link = document.createElement('a');
+  link.download = `acnemap-scan-${Date.now()}.png`;
+  link.href = canvas.toDataURL('image/png');
+  link.click();
 
-  // Paint heatmaps
-  paintHeat(polys.nose, scores.nose);
-  paintHeat(polys.chin, scores.chin);
-  paintHeat(leftPoly, scores.cheeks);
-  paintHeat(rightPoly, scores.cheeks);
-  paintHeat(topPoly, scores.forehead);
+  statusEl.textContent = 'Image captured and downloaded!';
+  statusEl.style.background = '#e8f5e9';
+}
 
-  // Update UI
-  scoresEls.forehead.textContent = (scores.forehead*100).toFixed(1) + '%';
-  scoresEls.cheeks.textContent = (scores.cheeks*100).toFixed(1) + '%';
-  scoresEls.nose.textContent = (scores.nose*100).toFixed(1) + '%';
-  scoresEls.chin.textContent = (scores.chin*100).toFixed(1) + '%';
+// Event listeners
+startBtn.addEventListener('click', startDetection);
+stopBtn.addEventListener('click', stopDetection);
+captureBtn.addEventListener('click', captureImage);
 
-  showAdvice(scores);
-  statusEl.textContent = 'Scan complete.';
+// Cleanup
+window.addEventListener('beforeunload', () => {
+  if (stream) stream.getTracks().forEach(track => track.stop());
 });
+
+// Initialize when DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}

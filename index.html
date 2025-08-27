@@ -1,76 +1,66 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AcneMap – AI-Style Skin Scanner (MVP)</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <!-- shadcn-like minimal reset via PicoCSS for quick nice defaults -->
-  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@latest/css/pico.min.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AcneMap - AI Acne Scanner</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main class="container">
-    <header>
-      <h1>AcneMap</h1>
-      <p class="tagline">Scan your face, locate acne-prone regions, and get gentle home-remedy suggestions.</p>
-    </header>
+  <header>
+    <img src="assets/logo.jpg" alt="AcneMap Logo" class="logo">
+    <h1>AcneMap - AI Acne Scanner</h1>
+  </header>
 
-    <section class="card grid">
-      <div>
-        <h3>1) Choose input</h3>
-        <div class="input-row">
-          <button id="startCamera" class="contrast">Use Camera</button>
-          <label class="file">
-            <input type="file" id="imageUpload" accept="image/*" />
-            <span>or Upload Photo</span>
-          </label>
-        </div>
-
-        <details class="note">
-          <summary>Privacy</summary>
-          <p>All processing runs in your browser. No images are uploaded to any server.</p>
-        </details>
-
-        <h3 class="mt">2) Scan & Map</h3>
-        <button id="scanBtn">Scan Face</button>
-        <p id="status" class="status">Waiting for image…</p>
+  <div class="container">
+    <section class="scanner-section">
+      <h2>Face Scanner</h2>
+      
+      <div class="instructions">
+        <h3>How to use:</h3>
+        <ol>
+          <li>Allow camera access when prompted</li>
+          <li>Position your face in the center of the view</li>
+          <li>Click "Start Detection" to begin analysis</li>
+          <li>See results and recommended remedies below</li>
+        </ol>
       </div>
-
-      <div class="viewer">
-        <div class="stage">
-          <video id="video" autoplay playsinline style="display:none"></video>
-          <canvas id="canvas" width="640" height="480"></canvas>
-        </div>
-        <small>Outline = detected face mesh. Pink heat shows likely redness/blemishes.</small>
+      
+      <div class="scanner">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="overlay" class="overlay-canvas"></canvas>
       </div>
+      
+      <div class="controls">
+        <button id="startBtn">
+          <span class="btn-icon">▶</span> Start Detection
+        </button>
+        <button id="stopBtn" disabled>
+          <span class="btn-icon">⏹</span> Stop Detection
+        </button>
+        <button id="captureBtn" disabled>
+          <span class="btn-icon">📸</span> Capture Image
+        </button>
+      </div>
+      
+      <div id="status" class="status">Waiting to start detection...</div>
     </section>
 
-    <section class="card">
-      <h3>Results</h3>
-      <div id="results" class="results">
-        <div class="pill">Forehead: <span id="f-score">–</span></div>
-        <div class="pill">Cheeks: <span id="c-score">–</span></div>
-        <div class="pill">Nose: <span id="n-score">–</span></div>
-        <div class="pill">Chin: <span id="ch-score">–</span></div>
+    <section class="results-section">
+      <h2 class="results-header">Detection Results</h2>
+      
+      <div id="results">
+        <p>No detection results yet. Start detection to see analysis.</p>
       </div>
-      <div id="advice" class="advice"></div>
     </section>
+  </div>
 
-    <footer>
-      <p class="disclaimer"><strong>Disclaimer:</strong> This tool is for wellness/education. It is not medical advice. If you have severe, painful, or persistent acne, please consult a dermatologist.</p>
-      <p class="credit">Built with <a href="https://developers.google.com/mediapipe/solutions/vision/face_mesh" target="_blank" rel="noreferrer">MediaPipe FaceMesh</a> and simple redness analysis.</p>
-    </footer>
-  </main>
+  <footer>
+    <p>AcneMap - AI Acne Scanner Demo | For demonstration purposes only by ALISHA & AIMEE</p>
+  </footer>
 
-  <!-- MediaPipe FaceMesh -->
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script defer src="app.js"></script>
 
-  <!-- App -->
-  <script src="app.js"></script>
 </body>
 </html>

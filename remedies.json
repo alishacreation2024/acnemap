@@ -1,88 +1,31 @@
-{
-  "forehead": [
-    {
-      "title": "Aloe vera gel (pure) \u2013 nightly",
-      "how": "Apply a thin layer of fresh aloe gel after cleansing. Leave overnight, rinse in the morning.",
-      "why": "Soothes irritation and supports barrier repair.",
-      "caution": "Patch test first. Avoid if stinging persists."
-    },
-    {
-      "title": "Green tea compress",
-      "how": "Brew green tea, cool fully. Press a clean cotton pad on the forehead for 5\u201310 minutes.",
-      "why": "Green tea polyphenols can calm redness and oiliness.",
-      "caution": "Use unsweetened tea; discard leftovers daily."
-    },
-    {
-      "title": "Multani mitti (Fuller\u2019s earth) mask 1\u20132\u00d7/week",
-      "how": "Mix 1 tsp multani mitti with rose water or plain water. Apply for 8\u201310 minutes only; rinse before cracking.",
-      "why": "Absorbs excess oil.",
-      "caution": "Do not over-dry; moisturize after."
-    }
+// Acne remedies data (can be moved to remedies.json later)
+const acneRemedies = {
+  "Forehead Acne": [
+    "Wash your face twice daily with mild cleanser",
+    "Avoid oily hair products",
+    "Drink plenty of water",
+    "Use non-comedogenic moisturizers",
+    "Consider using salicylic acid products"
   ],
-  "cheeks": [
-    {
-      "title": "Honey dab (raw or manuka-like)",
-      "how": "Spot-apply a small amount for 15\u201320 minutes, then rinse.",
-      "why": "Natural humectant with mild antimicrobial action.",
-      "caution": "Avoid if allergic to bee products."
-    },
-    {
-      "title": "Oatmeal calm-down",
-      "how": "Blend plain oats to a fine powder; mix with water into a paste. Apply 10 minutes and rinse.",
-      "why": "Colloidal oatmeal reduces itching and redness.",
-      "caution": "Use plain oats only; no flavors."
-    },
-    {
-      "title": "Cucumber slices",
-      "how": "Chill slices and place on cheeks 5\u201310 minutes.",
-      "why": "Cooling reduces swelling and irritation.",
-      "caution": "Short contact; do not rub."
-    }
+  "Cheek Acne": [
+    "Clean pillowcases regularly",
+    "Avoid touching your face often",
+    "Use non-comedogenic products",
+    "Sanitize your phone regularly",
+    "Try tea tree oil as a natural remedy"
   ],
-  "nose": [
-    {
-      "title": "Steam & gentle cleanse (2\u20133 min)",
-      "how": "Lean over warm (not hot) steam for 2\u20133 minutes, then cleanse and splash cool water.",
-      "why": "Softens sebum and helps clear pores.",
-      "caution": "Keep safe distance; avoid with rosacea."
-    },
-    {
-      "title": "Salt-water dab",
-      "how": "Mix 1/4 tsp salt in 1/2 cup boiled-cooled water. Lightly dab and rinse after 5 minutes.",
-      "why": "Mild antiseptic effect.",
-      "caution": "If stings, dilute further or stop."
-    }
-  ],
-  "chin": [
-    {
-      "title": "Turmeric + yogurt spot mask (rarely)",
-      "how": "Mix a pinch of turmeric in 1 tsp plain yogurt. Spot-apply 8\u201310 minutes, then rinse.",
-      "why": "Turmeric has anti-inflammatory compounds.",
-      "caution": "Can stain yellow; patch test."
-    },
-    {
-      "title": "Ice wrap (brief)",
-      "how": "Wrap an ice cube in cloth; press on swollen spots up to 1 minute total.",
-      "why": "Reduces swelling and redness temporarily.",
-      "caution": "Never apply ice directly; limit time."
-    }
-  ],
-  "universal": [
-    {
-      "title": "Gentle cleanse 2\u00d7/day",
-      "how": "Use a mild, fragrance-free cleanser; rinse with lukewarm water.",
-      "why": "Removes oil/sweat without stripping.",
-      "caution": "Avoid harsh scrubs and over-washing."
-    },
-    {
-      "title": "Pillowcase & phone hygiene",
-      "how": "Change pillowcase every 2\u20133 nights; wipe phone screen daily.",
-      "why": "Reduces bacteria and oil transfer."
-    },
-    {
-      "title": "Hands-off rule",
-      "how": "Avoid picking or popping.",
-      "why": "Prevents scarring and inflammation."
-    }
+  "Chin Acne": [
+    "Balance your diet (reduce sugar & dairy)",
+    "Check for hormonal imbalances",
+    "Apply aloe vera gel overnight",
+    "Use products with benzoyl peroxide",
+    "Manage stress through meditation/exercise"
+     ],
+  "Nose Acne": [
+    "Use pore strips or clay masks",
+    "Avoid picking or squeezing",
+    "Exfoliate gently 1-2 times per week",
+    "Use oil-free makeup products",
+    "Try steam treatment to open pores"
   ]
-}
+};

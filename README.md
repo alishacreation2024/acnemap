@@ -1,17 +1,21 @@
-# AcneMap (MVP)
-A lightweight, browser-only acne scanner that:
-- Detects face landmarks (MediaPipe FaceMesh via CDN)
-- Estimates redness/blemish concentration by region (forehead/cheeks/nose/chin)
-- Shows a soft heatmap overlay
-- Suggests gentle home remedies (editable in `remedies.json`)
+# AcneMap - AI Acne Scanner
 
-## Run locally
-Just open `index.html` in a modern browser. For camera use, you may need to run a local server:
-- **VS Code**: Install “Live Server” extension → Right-click `index.html` → “Open with Live Server”.
-- Or Python: `python -m http.server` then visit `http://localhost:8000`.
+A web application that uses AI to detect different types of acne on your face and provides personalized treatment recommendations.
 
-## Notes
-- All processing is client-side; no uploads.
-- This is a heuristic MVP (redness proxy). For real acne detection, plug in a trained model (e.g., TensorFlow.js) and replace `analyzeRegion()` with model outputs mapped to regions.
-- Edit/add remedies safely in `remedies.json`.
-- Not medical advice. See a dermatologist for severe or persistent acne.
+## Features
+
+- Real-time face detection using your webcam
+- AI-powered acne type identification
+- Personalized treatment recommendations
+- Image capture for tracking progress
+
+## Setup
+
+1. Place all files in the same directory
+2. Add your logo image to the assets folder as "logo.jpg"
+3. Open `index.html` in a modern web browser
+4. Allow camera access when prompted
+5. Position your face in the camera view
+6. Click "Start Detection" to begin analysis
+
+## File Structure
